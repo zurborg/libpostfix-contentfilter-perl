@@ -1,6 +1,6 @@
 lib/Postfix/ContentFilter.pm
 LICENSE
-BuildOptions.pm
+config/BuildOptions.pm
 Makefile.PL
 MANIFEST
 README

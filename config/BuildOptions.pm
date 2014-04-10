@@ -5,6 +5,7 @@
     ABSTRACT_FROM       => 'lib/Postfix/ContentFilter.pm',
     LICENSE             => 'open-source',
     PL_FILES            => {},
+    PMLIBDIRS           => [qw[ lib ]],
     PREREQ_PM => {
         'Test::More' => 0,
     },
@@ -16,6 +17,6 @@
     },
     clean               => { FILES => 'Postfix-ContentFilter-* *~' },
     depend => {
-	'$(FIRST_MAKEFILE)' => 'BuildOptions.pm',
+	'$(FIRST_MAKEFILE)' => 'config/BuildOptions.pm',
     },
 );
