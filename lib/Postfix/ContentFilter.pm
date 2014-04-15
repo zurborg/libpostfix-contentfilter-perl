@@ -4,9 +4,9 @@ use warnings;
 use strict;
 use 5.010;
 use Carp;
-use MIME::Parser;
-use Try::Tiny;
-use IPC::Open2;
+use MIME::Parser 5.503;
+use Try::Tiny 0.11;
+use IPC::Open2 1.03;
 
 =head1 NAME
 
@@ -14,11 +14,11 @@ Postfix::ContentFilter - a perl content_filter for postfix
 
 =head1 VERSION
 
-Version 1.00
+Version 1.01
 
 =cut
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 =head1 SYNOPSIS
 
