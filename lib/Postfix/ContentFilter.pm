@@ -6,7 +6,7 @@ use 5.010;
 use Carp;
 use MIME::Parser 5.503;
 use Try::Tiny 0.11;
-use IPC::Open2 1.03;
+use IPC::Open3 1.03;
 
 =head1 NAME
 
@@ -14,11 +14,11 @@ Postfix::ContentFilter - a perl content_filter for postfix
 
 =head1 VERSION
 
-Version 1.01
+Version 1.02
 
 =cut
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 =head1 SYNOPSIS
 
@@ -43,6 +43,7 @@ Postfix::ContentFilter can be used for C<content_filter> scripts, as described h
 our $parser = MIME::Parser->new;
 our $sendmail = [qw[ /usr/sbin/sendmail -G -i ]];
 our $output;
+our $error;
 
 =head1 FUNCTIONS
 
@@ -72,28 +73,30 @@ sub process($&;*) {
     
     confess "subref should return instance of MIME::Entity" unless ref $entity and $entity->isa('MIME::Entity');
 
-    my $ret;
+    my $ret = -1;
     
-    $SIG{CHLD} = sub { wait; $ret = $? };
+    $SIG{CHLD} = sub { wait; $ret = $? if $? >= 0 };
     
     delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV', 'PATH'} if ${^TAINT};
     
-    my ($in, $out);
-    my $pid = open2 ($out, $in, @$sendmail, @ARGV) or confess "open2: $!";
+    my ($in, $out, $err);
+    my $pid = open3 ($in, $out, $err, @$sendmail, @ARGV) or confess "open3: $!";
     
     $entity->print($in) or confess "print: $!";
 
     close $in;
     
-    $output = join '' => <$out>;
+    $output = join '' => <$out> if defined $out;
+    $error = join '' => <$err> if defined $err;
     
     close $out;
     
     waitpid($pid, 0);
+	$ret = $? if $? >= 0;
     
     $parser->filer->purge;
     
-    return $ret;
+    return ($ret >> 8);
 }
 
 =head1 VARIABLES

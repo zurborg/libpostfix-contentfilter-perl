@@ -26,4 +26,6 @@ is(Postfix::ContentFilter->process (sub {
 	return $entity;
 }, $R) => 0);
 
+diag($Postfix::ContentFilter::error) if defined $Postfix::ContentFilter::error;
+
 is($Postfix::ContentFilter::output, "Subject: bar\n\nfoo\n");
