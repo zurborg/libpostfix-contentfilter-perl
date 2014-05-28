@@ -7,10 +7,9 @@
     PL_FILES            => {},
     PMLIBDIRS           => [qw[ lib ]],
     PREREQ_PM => {
-        'Test::More'        => 0,
-	'MIME::Parser'      => 5.503,
-	'Try::Tiny'         => 0.11,
-	'IPC::Open2'        => 1.03,
+		'Test::More'        => 0,
+		'Try::Tiny'         => 0.11,
+		'IPC::Open3'        => 1.12,
     },
     dist => {
         COMPRESS            => 'gzip -9f',
