@@ -1,11 +1,7 @@
 package Postfix::ContentFilter;
 
-use warnings;
-use strict;
-use 5.010;
+use Modern::Perl;
 use Carp;
-use MIME::Parser 5.503;
-use Mail::Message;
 use Try::Tiny 0.11;
 use IPC::Open3 1.03;
 use Scalar::Util qw(blessed);
@@ -79,34 +75,46 @@ sub new($%)
 }
 
 =head2 parser($string)
-C<parser()> specifies the parser to use, which can be either C<MIME::Entity> or C<Mail::Message>. It defaults to C<MIME::Entity>. When called without any arguments, it returns the current parser.
+
+C<parser()> specifies the parser to use, which can be either C<MIME::Parser> or C<Mail::Message>. It defaults to C<MIME::Parser>, if available, or C<Mail::Message> whichever could be found first. When called without any arguments, it returns the current parser.
+
 =cut
 
-sub parser
-{
-    my $self = shift;
-    if (my $ptype = shift)
-    {
-        my $parsers = {
-            # Key is parser, value is returned entity
-            'MIME::Parser'  => 'MIME::Entity',
-            'Mail::Message' => 'Mail::Message',
-        };
-        if (my $ent = $parsers->{$ptype})
-        {
-            $self->{parser} = $ptype;
-            $self->{entity} = $ent;
-        }
-        else {
-            croak "Unknown parser $ptype";
-        }
+sub _load_any {
+	foreach my $module (@_) {
+		my $path = $module;
+		$path =~ s/::/\//g;
+		$path .= '.pm';
+		return $module if exists $INC{$path};
+		eval "require $module; 1" and return $module;
+	}
+    croak("Couldn't find any of these implementations: @_");
+}
+
+sub parser {
+    my ($self, $ptype) = @_;
+	my $parsers = {
+		# Key is parser, value is returned entity
+		'MIME::Parser'  => 'MIME::Entity',
+		'Mail::Message' => 'Mail::Message',
+	};
+	
+	return $self->{parser} if defined $self->{parser} and not defined $ptype;
+
+	$ptype = _load_any($ptype || qw(MIME::Parser Mail::Message));
+	
+	if (my $ent = $parsers->{$ptype}) {
+        $self->{parser} = $ptype;
+        $self->{entity} = $ent;
+    } else {
+        croak "Unknown parser $ptype";
     }
-    unless ($self->{parser})
-    {
-        $self->{parser} = 'MIME::Parser',
-        $self->{entity} = 'MIME::Entity',
-    }
-    $self->{parser};
+	
+    return $self->{parser};
+}
+
+sub _parse {
+	my ($self, $handle) = @_;
 }
 
 =head2 process($coderef [, $inputhandle])
@@ -120,43 +128,47 @@ This function returns the exitcode of C<sendmail>.
 sub process($&;*) {
     my ($class, $coderef, $handle) = @_;
     
-    my $self = blessed $class ? $class : bless {}, $class; # For backwards compatibility, to enable calling directly
+    my $self = blessed $class
+	         ? $class
+			 : bless {}, $class
+			 ; # For backwards compatibility, to enable calling directly
 
     confess "please call as ".__PACKAGE__."->process(sub{ ... })" unless ref $coderef eq 'CODE';
     
     $handle = \*STDIN unless ref $handle eq 'GLOB';
 
     my $entity;
-    my $ptype = parser $self; # Sets $self->{parser} and $self->{entity}
-    if ($ptype eq 'Mail::Message')
-    {
-         $entity = Mail::Message->read($handle) or confess "failed to parse with Mail::Message";
-    }
-    elsif($ptype eq 'MIME::Parser') {
-        $parser = MIME::Parser->new;
-        $entity = $parser->parse($handle) or confess "failed to parse wth MIME::Parser";
-    }
-    else {
-        # Something's wrong
-        confess "Unknown parser $ptype";
-    }
-    
+    my $parser = $self->parser;
+	
+	given (ref $parser || $parser) {
+		when ('Mail::Message') {
+			$entity = $parser->read($handle) or confess "failed to parse with Mail::Message";
+		}
+		when ('MIME::Parser') {
+			$parser = $parser->new;
+			$entity = $parser->parse($handle) or confess "failed to parse wth MIME::Parser";
+		}
+		default {
+			confess "Unkown parser $parser";
+		}
+	}
+	
     try {
-	$entity = $coderef->($entity);
+		$entity = $coderef->($entity);
     } catch {
-        if ($ptype eq 'MIME::Parser')
-        {
-            $parser->filer->purge;
-        }
-        elsif($ptype eq 'Mail::Message')
-        {
-            $entity->DESTROY;
-        }
-	croak $_;
+		given (ref $parser || $parser) {
+			when ('Mail::Message') {
+	            $entity->DESTROY;
+			}
+			when ('MIME::Parser') {
+	            $parser->filer->purge;
+			}
+		}
+		confess $_;
     };
     
     confess "subref should return instance of $self->{entity}"
-        unless ref $entity and $entity->isa($self->{entity});
+        unless blessed($entity) and $entity->isa($self->{entity});
 
     my $ret = -1;
     
@@ -179,16 +191,16 @@ sub process($&;*) {
     waitpid($pid, 0);
 	$ret = $? if $? >= 0;
     
-    if ($ptype eq 'MIME::Parser')
-    {
-        $parser->filer->purge;
-    }
-    elsif($ptype eq 'Mail::Message')
-    {
-        $entity->DESTROY;
-    }
-
-    return ($ret >> 8);
+	given (ref $parser || $parser) {
+		when ('Mail::Message') {
+			$entity->DESTROY;
+		}
+		when ('MIME::Parser') {
+			$parser->filer->purge;
+		}
+	}
+	
+    return $ret;
 }
 
 =head1 VARIABLES
