@@ -33,7 +33,7 @@ is($cf->parser('Mail::Message') => 'Mail::Message') or die;
 
 $Postfix::ContentFilter::sendmail = [ $cat ];
 
-is($cf->process (sub {
+ok($cf->process (sub {
 	my ($entity) = @_;
 	
 	isa_ok($entity => 'Mail::Message') or die;
@@ -43,7 +43,7 @@ is($cf->process (sub {
 	# TODO: change subject.
 	
 	return $entity;
-}, $R) => 0);
+}, $R));
 
 diag($Postfix::ContentFilter::error) if defined $Postfix::ContentFilter::error;
 

@@ -2,7 +2,7 @@ NAME
     Postfix::ContentFilter - a perl content_filter for postfix
 
 VERSION
-    Version 1.02
+    Version 1.10
 
 DESCRIPTION
     Postfix::ContentFilter can be used for `content_filter' scripts, as
