@@ -200,7 +200,7 @@ sub process($&;*) {
 		}
 	}
 	
-    return $ret;
+    return $ret == 0 ? 1 : 0;
 }
 
 =head1 VARIABLES

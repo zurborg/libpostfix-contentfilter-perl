@@ -33,7 +33,7 @@ is($cf->parser('MIME::Parser') => 'MIME::Parser') or die;
 
 $Postfix::ContentFilter::sendmail = [ $cat ];
 
-is($cf->process (sub {
+ok($cf->process (sub {
 	my ($entity) = @_;
 	
 	isa_ok($entity => 'MIME::Entity') or die;
@@ -45,7 +45,7 @@ is($cf->process (sub {
 	$entity->bodyhandle(MIME::Body::Scalar->new(["foo\n"]));
 	
 	return $entity;
-}, $R) => 0);
+}, $R));
 
 diag($Postfix::ContentFilter::error) if defined $Postfix::ContentFilter::error;
 
