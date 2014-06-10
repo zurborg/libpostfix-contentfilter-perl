@@ -7,7 +7,7 @@
     PL_FILES            => {},
     PMLIBDIRS           => [qw[ lib ]],
     PREREQ_PM => {
-		'Test::More'        => 0,
+		'Test::Most'        => 0,
 		'Modern::Perl'      => 0,
 		'Try::Tiny'         => 0.11,
 		'IPC::Open3'        => 1.12,
