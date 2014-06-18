@@ -64,15 +64,13 @@ Alternatively C<process> can be called directly.
 
 =cut
 
-sub new($%)
-{   my ($class, $options) = @_;
+sub new($%) {
+	my ($class, $options) = @_;
     my $self = bless {}, $class;
-    if ($options && $options->{parser})
-    {
+    if ($options && $options->{parser}) {
         parser($self, $options->{parser});
     }
-
-    $self;
+    return $self;
 }
 
 =head2 parser($string)
