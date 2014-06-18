@@ -5,6 +5,7 @@ use Carp;
 use Try::Tiny 0.11;
 use IPC::Open3 1.03;
 use Scalar::Util qw(blessed);
+use Class::Load qw(load_first_existing_class);
 
 =head1 NAME
 
@@ -80,17 +81,6 @@ C<parser()> specifies the parser to use, which can be either C<MIME::Parser> or 
 
 =cut
 
-sub _load_any {
-	foreach my $module (@_) {
-		my $path = $module;
-		$path =~ s/::/\//g;
-		$path .= '.pm';
-		return $module if exists $INC{$path};
-		eval "require $module; 1" and return $module;
-	}
-    croak("Couldn't find any of these implementations: @_");
-}
-
 sub parser {
     my ($self, $ptype) = @_;
 	my $parsers = {
@@ -101,7 +91,7 @@ sub parser {
 	
 	return $self->{parser} if defined $self->{parser} and not defined $ptype;
 
-	$ptype = _load_any($ptype || qw(MIME::Parser Mail::Message));
+	$ptype = load_first_existing_class(map { $_ => {} } ($ptype || qw(MIME::Parser Mail::Message)));
 	
 	if (my $ent = $parsers->{$ptype}) {
         $self->{parser} = $ptype;

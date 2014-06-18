@@ -9,6 +9,7 @@
     PREREQ_PM => {
 		'Test::Most'        => 0,
 		'Modern::Perl'      => 0,
+		'Class::Load'       => 0,
 		'Try::Tiny'         => 0.11,
 		'IPC::Open3'        => 1.03,
     },
