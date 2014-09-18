@@ -5,3 +5,4 @@
 ^documentation/(README|INSTALL)\.pod$
 ^.travis.yml$
 ^README.md$
+^debian/
