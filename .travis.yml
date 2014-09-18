@@ -7,6 +7,8 @@ perl:
   - "5.10"
 
 before_script:
+  - cpanm ExtUtils::MakeMaker
+  - cpanm Hash::Merge::Simple
   - cpanm Pod::Readme
   - cpanm Pod::Markdown
   
