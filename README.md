@@ -4,7 +4,7 @@ Postfix::ContentFilter - a perl content\_filter for postfix
 
 # VERSION
 
-Version 1.11
+Version 1.12
 
 # DESCRIPTION
 
