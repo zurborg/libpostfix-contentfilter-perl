@@ -11,7 +11,7 @@
 		'Modern::Perl'      => 0,
 		'Class::Load'       => 0,
 		'Try::Tiny'         => 0.11,
-		'IPC::Open3'        => 1.03,
+		'IPC::Run'          => 0.92,
     },
     dist => {
         COMPRESS            => 'gzip -9f',

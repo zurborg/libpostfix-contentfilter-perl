@@ -43,9 +43,7 @@ ok($cf->process (sub {
 	# TODO: change subject.
 	
 	return $entity;
-}, $R));
-
-diag($Postfix::ContentFilter::error) if defined $Postfix::ContentFilter::error;
+}, $R)) or diag($Postfix::ContentFilter::error);
 
 # TODO: test against 
 like($Postfix::ContentFilter::output, qr{Subject: foo\n}m);

@@ -45,8 +45,6 @@ ok($cf->process (sub {
 	$entity->bodyhandle(MIME::Body::Scalar->new(["foo\n"]));
 	
 	return $entity;
-}, $R));
-
-diag($Postfix::ContentFilter::error) if defined $Postfix::ContentFilter::error;
+}, $R)) or diag($Postfix::ContentFilter::error);
 
 is($Postfix::ContentFilter::output, "Subject: bar\n\nfoo\n");

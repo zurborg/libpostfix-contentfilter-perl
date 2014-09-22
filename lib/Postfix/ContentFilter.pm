@@ -3,7 +3,7 @@ package Postfix::ContentFilter;
 use Modern::Perl;
 use Carp;
 use Try::Tiny 0.11;
-use IPC::Open3 1.03;
+use IPC::Run 0.92 qw(start pump finish timeout);
 use Scalar::Util qw(blessed);
 use Class::Load qw(load_first_existing_class);
 
@@ -13,11 +13,11 @@ Postfix::ContentFilter - a perl content_filter for postfix
 
 =head1 VERSION
 
-Version 1.11
+Version 1.12
 
 =cut
 
-our $VERSION = '1.11';
+our $VERSION = '1.12';
 
 =head1 SYNOPSIS
 
@@ -158,37 +158,52 @@ sub process($&;*) {
     confess "subref should return instance of $self->{entity}"
         unless blessed($entity) and $entity->isa($self->{entity});
 
-    my $ret = -1;
-    
-    $SIG{CHLD} = sub { wait; $ret = $? if $? >= 0 };
+    my $ret;
     
     delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV', 'PATH'} if ${^TAINT};
     
-    my ($in, $out, $err);
-    my $pid = open3 ($in, $out, $err, @$sendmail, @ARGV) or confess "open3: $!";
-    
-    $entity->print($in) or confess "print: $!";
+    $output = undef;
+    $error = undef;
 
-    close $in;
-    
-    $output = join '' => <$out> if defined $out;
-    $error = join '' => <$err> if defined $err;
-    
-    close $out;
-    
-    waitpid($pid, 0);
-	$ret = $? if $? >= 0;
-    
-	given (ref $parser || $parser) {
-		when ('Mail::Message') {
-			$entity->DESTROY;
-		}
-		when ('MIME::Parser') {
-			$parser->filer->purge;
-		}
-	}
+	my $in;
 	
-    return $ret == 0 ? 1 : 0;
+	try {
+    
+		my $h = start [ @$sendmail, @ARGV ], \$in, \$output, \$error, timeout(60);
+		
+		
+		given (ref $parser || $parser) {
+			when ('Mail::Message') {
+				$in = $entity->string;
+			}
+			when ('MIME::Parser') {
+				$in = $entity->as_string;
+			}
+		}
+		
+		pump $h;
+		
+		$ret = finish $h;
+		
+	} catch {
+
+		local $, = ' ';
+		confess "error: $_ with @$sendmail @ARGV";
+
+	} finally {
+
+		given (ref $parser || $parser) {
+			when ('Mail::Message') {
+				$entity->DESTROY;
+			}
+			when ('MIME::Parser') {
+				$parser->filer->purge;
+			}
+		}
+
+	};
+	
+    return $ret;
 }
 
 =head1 VARIABLES
