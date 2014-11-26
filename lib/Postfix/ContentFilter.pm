@@ -5,9 +5,9 @@ package Postfix::ContentFilter;
 
 use Carp;
 use Try::Tiny 0.11;
-use IPC::Run 0.92 qw(start pump finish timeout);
 use Scalar::Util qw(blessed);
 use Class::Load qw(load_first_existing_class);
+use AnyEvent::Proc;
 
 # VERSION
 
@@ -155,18 +155,17 @@ sub process($&;*) {
 	
 	try {
     
-		my $h = start [ @$sendmail, @ARGV ], \$in, \$output, \$error, timeout(60);
+		my ($bin, @args) = (@$sendmail, @ARGV);
+		my $proc = AnyEvent::Proc->new(bin => $bin, args => \@args, ttl => 60, outstr => \$output, errstr => \$error);
 		
 		my $module = ref $parser || $parser;
 		if ($module eq 'Mail::Message') {
-                        $in = $entity->string;
-                } elsif ($module eq 'MIME::Parser') {
-                        $in = $entity->as_string;
+			$entity->print($proc->in->fh);
+        } elsif ($module eq 'MIME::Parser') {
+			$entity->print($proc->in->fh);
 		}
-		
-		pump $h;
-		
-		$ret = finish $h;
+		$proc->finish;
+		$ret = !$proc->wait;
 		
 	} catch {
 
@@ -175,11 +174,11 @@ sub process($&;*) {
 
 	} finally {
 
-	        my $module = ref $parser || $parser;
+	    my $module = ref $parser || $parser;
 		if ($module eq 'Mail::Message') {
-                        $entity->DESTROY;
-                } elsif ($module eq 'MIME::Parser') {
-                        $parser->filer->purge;
+            $entity->DESTROY;
+        } elsif ($module eq 'MIME::Parser') {
+            $parser->filer->purge;
 		}
 
 	};
