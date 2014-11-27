@@ -1,6 +1,7 @@
 Revision history for Postfix-ContentFilter
 
 {{$NEXT}}
+ - use AnyEvent::Proc instead of IPC::Run
 
 1.12 2014-11-24
  - added Modern::Perl to prequirements
