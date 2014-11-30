@@ -2,6 +2,7 @@ Revision history for Postfix-ContentFilter
 
 {{$NEXT}}
  - use AnyEvent::Proc instead of IPC::Run
+ - remove subroutine prototypes
 
 1.120 2014-11-30
  - change version format

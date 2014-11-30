@@ -55,7 +55,7 @@ Alternatively C<process> can be called directly.
 
 =cut
 
-sub new($%) {
+sub new {
 	my ($class, $options) = @_;
     my $self = bless {}, $class;
     if ($options && $options->{parser}) {
@@ -104,7 +104,7 @@ This function returns the exitcode of C<sendmail>.
 
 =cut
 
-sub process($&;*) {
+sub process {
     my ($class, $coderef, $handle) = @_;
     
     my $self = blessed $class
